@@ -160,8 +160,10 @@
 <<echo = FALSE, message = FALSE, warning = FALSE>>=
 library("knitr")
 library("ggplot2")
-opts_chunk$set(cache = TRUE, fig.width = 5, fig.height = 5,
+opts_chunk$set(cache = TRUE, fig.width = 7, fig.height = 5,
                fig.align = "center", message = F, warning = F, echo = F)
+scale_colour_discrete <- function(...)
+  scale_colour_brewer(..., palette="Set2")
 theme_set(theme_bw())
 silence <- sapply(list.files("../src", full.names = TRUE), read_chunk)
 @
@@ -217,12 +219,12 @@ We will focus on three data sets,
 \begin{itemize}
   \item \texttt{license}: We were originally given the geographic
     location of each registered alcohol vendor in San Francisco, along
-    with the type of license(s) they owned\footnote{For example, license 20 is
-      ``Off-Sale Beer and Wine,''  and 40 is ``On-Sale Beer.'' This
-      \href{https://www.abc.ca.gov/permits/licensetypes.html}{site} has
-      more detailed descriptions.} We simplified this to just rates of
-    each license (there are 23 total) in each census tract, where the
-    rate comes from normalizing by population.
+    with the type of license(s) they owned\footnote{This
+      \href{https://www.abc.ca.gov/permits/licensetypes.html}{site}
+      has more detailed descriptions.} We first filtered away license
+    types that were very rare, and simplified further by getting rates
+    for each license (there are 23 total) in each census tract, by
+    normalizing for population size.
   \item \texttt{census}: This is standard census information from the
     American Community Survey, at the census tract level -- we have
     the population in 2010, a breakdown by demographics, median
@@ -265,11 +267,12 @@ for subsequent methods. See Figures \ref{fig:pca_scores},
 
 <<libraries>>=
 @
+<<utils>>=
+@
 <<get-data>>=
 @
 <<preprocessing>>=
 @
-
 
 <<run-pca>>=
 @
@@ -342,10 +345,36 @@ and crime reports, anyway.
 
 \subsection{MFA}
 
-MFA lets us work with all tables simultaneously. It is not typically
-applied to proportion data, though I don't know of any probabilistic
-interpretation (probably a normal with different variances for each
-table?).
+MFA lets us work with all tables simultaneously. We use the
+implementation provided by \cite{le2008factominer}. The results are
+quite similar to the original PCA, but we can now get extra
+group-level covariation information -- apparently the census and crime
+data are more related than either is to alcohol license rates.
+
+The first two dimensions capture about 50\% of the variance. Plots
+analogous to those displayed earlier are given in Figures
+\ref{fig:mfa-scores}, \ref{fig:mfa-loadings}, \ref{fig:mfa-map}.
+
+<<run-mfa>>=
+@
+
+\begin{figure}
+<<mfa-scores>>=
+@
+\caption{Scores computed from MFA.}
+\end{figure}
+
+\begin{figure}
+<<mfa-loadings>>=
+@
+\caption{Loadings computed from MFA.}
+\end{figure}
+
+\begin{figure}
+<<mfa-scores-map>>=
+@
+\caption{Scores for each census tract, from MFA.}
+\end{figure}
 
 \subsection{DPCoA}
 
