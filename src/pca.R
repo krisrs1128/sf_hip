@@ -27,5 +27,7 @@ ggplot(tract_scores_map) +
 
 ## ---- pca-loadings ----
 tract_loadings <- data.frame(variable = rownames(tract_pca$loadings), tract_pca$loadings[, 1:2])
+tract_loadings <- process_loadings(tract_loadings)
+
 ggplot(tract_loadings) +
-  geom_text(aes(x = Comp.1, y = Comp.2, label = variable), size = 3)
+  geom_text(aes(x = Comp.1, y = Comp.2, label = variable, col = group), size = 3)
