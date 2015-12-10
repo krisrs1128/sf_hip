@@ -157,19 +157,18 @@
 %\newcommand{\ea}{\end{align}}
 %\newcommand{\ba}{\begin{align}}
 
-<<echo = FALSE>>=
+<<echo = FALSE, message = FALSE, warning = FALSE>>=
 library("knitr")
 library("ggplot2")
-opts_chunk$set(cache = TRUE, fig.width = 8, fig.height = 8,
-               fig.align = "center", message = F, warning = F)
+opts_chunk$set(cache = TRUE, fig.width = 5, fig.height = 5,
+               fig.align = "center", message = F, warning = F, echo = F)
 theme_set(theme_bw())
-
-sapply(list.files("../src", full.names = TRUE), read_chunk)
+silence <- sapply(list.files("../src", full.names = TRUE), read_chunk)
 @
 
 \linespread{1.5}
 
-\title{A Case Study in Multitable Data Analysis The SFHIP Data}
+\title{Case Studies in Multitable Data Analysis: The SFHIP Problem}
 \author{Kris Sankaran}
 
 \begin{document}
@@ -261,9 +260,8 @@ features. Also, we will not have a sense how the groups of variables
 are related to each other.
 
 Nonetheless, it is a good baseline, which will serve as a reference
-for subsequent methods. See Figures \ref{fig:pca_map_1},
-\ref{fig:pca_map_2}, \ref{fig:pca_scores}, \ref{fig:pca_loadings} for
-the results.
+for subsequent methods. See Figures \ref{fig:pca_scores},
+\ref{fig:pca_loadings}, and \ref{fig:pca_map} for the results.
 
 <<libraries>>=
 @
@@ -293,19 +291,11 @@ the results.
 \end{figure}
 
 \begin{figure}
-<<pca-map-comp1>>=
+<<pca-map-comp>>=
 @
-\label{fig:pca_map_1}
-\caption{This shades each census tract in San Francisco by the
-  first PCA component.}
-\end{figure}
-
-\begin{figure}
-<<pca-map-comp2>>=
-@
-\label{fig:pca_map_2}
-\caption{This shades each census tract in San Francisco by the
-  second PCA component.}
+\label{fig:pca_map}
+\caption{This shades each census tract in San Francisco by the first
+  few PCA components.}
 \end{figure}
 
 \subsection{CCA}
@@ -313,9 +303,42 @@ the results.
 A first step towards understanding the covariation across tables is to
 apply CCA. This has a few limitations -- like PCA, it implicitly
 assumes a gaussian model \cite{bach2005probabilistic}, and can only
-work with pairs of tables. There are only three pairs here, though,
-and it is not too overwhelming to view the scores and loadings for
-each combination.
+work with pairs of tables. This is not too much of a problem here,
+since we mainly care about the relationship between alcohol licenses
+and crime reports, anyway.
+
+<<run-cca>>=
+@
+
+<<cca-get-plots>>=
+@
+
+\begin{figure}
+<<cca-crime-scores>>=
+@
+\caption{These are the scores for the census tracts, when using the
+  crime data. Compare with the scores from the licesnse data, in
+  Figure \ref{fig:cca-license-scores}.}
+\label{fig:cca-crime-scores}
+\end{figure}
+
+\begin{figure}
+<<cca-license-scores>>=
+@
+\caption{These are the scores for the census tracts, when using the
+  license data, instead of the crime data, as in Figure
+  \ref{fig:cca-crime-scores}.}
+\label{fig:cca-license-scores}
+\end{figure}
+
+\begin{figure}
+<<cca-top-correlation>>=
+@
+\caption{To assess the success of the CCA optimization, we can plot
+  the correlation between the optimized scores across the two
+  tables. The correlation is relatively strong, suggesting that in
+  fact the tables are quite related, at a global level.}
+\end{figure}
 
 \subsection{MFA}
 
