@@ -22,6 +22,11 @@ tract_num <- tract_info %>%
   as.matrix()
 
 # some filtering and transformations
+demo_ix <- grep("demo", colnames(tract_num))
+sd_non_demo <- sd(tract_num[, -demo_ix])
+tract_num[, demo_ix] <- scale(tract_num[, demo_ix], center = F, scale = T)
+tract_num[, demo_ix] <- scale(tract_num[, demo_ix], center = F,
+                              scale = rep(1 / sd_non_demo, length(demo_ix)))
 tract_num <- tract_num[, colSums(tract_num != 0) >= 30]
 tract_num_unnormalized <- tract_num
 tract_num <- (tract_num ^ (1 / 3) - 1) / (1 / 3)
@@ -29,3 +34,6 @@ tract_num <- scale(tract_num, center = T, scale = F)
 
 rownames(tract_num) <- tract_info$Tract2010
 rownames(tract_num_unnormalized) <- tract_info$Tract2010
+
+
+
