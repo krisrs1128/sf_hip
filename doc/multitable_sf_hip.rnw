@@ -378,6 +378,22 @@ analogous to those displayed earlier are given in Figures
 
 \subsection{DPCoA}
 
+So far, none of our analysis has accounted for the (known)
+geographical distances between census tracts. For this, we can apply
+DPCoA \cite{pavoine2013new}, but we will have to forfeit the
+multitable interpretations possible with CCA and MFA. Also, as the
+method (or at least, the \texttt{R} function) only works with
+nonnegative data, we will have to work with the untransformed,
+uncentered version of the data.
+
+Our results are shown in figures.. The scores had already been smooth
+on the maps from our earlier approaches, even without enforcing
+spatial homogeneity, but this quality is even more pronounced
+here. That said, many of the overall relationships across features and
+between features and census tracts do seem consistent across methods.
+
+\begin{figure}
+
 \section{Appendix}
 
 \subsection{Maps}
