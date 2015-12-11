@@ -160,7 +160,7 @@
 <<echo = FALSE, message = FALSE, warning = FALSE>>=
 library("knitr")
 library("ggplot2")
-opts_chunk$set(cache = TRUE, fig.width = 7, fig.height = 5,
+opts_chunk$set(cache = TRUE, fig.width = 5, fig.height = 4,
                fig.align = "center", message = F, warning = F, echo = F)
 scale_colour_discrete <- function(...)
   scale_colour_brewer(..., palette="Set2")
@@ -243,8 +243,20 @@ Essentially, we have reduced all the raw data to a few tables of
 census-tract level rates. Yes, we have rarefied all the tracts, and
 are losing the fact that some of the rates are much better estimated
 than others. We'll leave it as a future exercise to repeat this
-analysis without simplifying to rates, perhaps by applying a sort of
-Poisson GLM (canonical correspondence analysis?) framework.
+analysis without simplifying to rates.
+
+We globally rescaled the demographic features so that each of their
+variances equaled the variance across all other features, which were
+already approximately on the same scale. Further, for all the methods
+except DPCoA, we
+\begin{itemize}
+\item cube root the rates, so that they look more gaussian, and
+\item center the features, so that the usual ``axis of an ellipse''
+  interpretation of PCA will apply.
+\end{itemize}
+We cannot do this same preprocessing for DPCoA, since the function
+expects nonnegative data\footnote{The typical ecological application is a
+species by sites counts matrix}.
 
 \section{Analysis}
 
@@ -386,23 +398,69 @@ method (or at least, the \texttt{R} function) only works with
 nonnegative data, we will have to work with the untransformed,
 uncentered version of the data.
 
-Our results are shown in figures.. The scores had already been smooth
-on the maps from our earlier approaches, even without enforcing
-spatial homogeneity, but this quality is even more pronounced
-here. That said, many of the overall relationships across features and
-between features and census tracts do seem consistent across methods.
+Our results are shown in Figures \ref{fig:dpcoa-scores},
+\ref{fig:dpcoa-loadings}, \ref{fig:dpcoa-scores-map}. The scores had
+already been smooth on the maps from our earlier approaches, even
+without enforcing spatial homogeneity, but now even stronger
+neighborhood clustering is apparent. Also, regions (in the south and
+southwest) that seemed to share essentially the same scores now appear
+quite different. It is not obvious to me whether this is due to
+differences in methdology or the absense of processing.
+
+<<get-distances>>=
+@
+
+<<run-dpcoa>>=
+@
 
 \begin{figure}
+<<dpcoa-scores-plot>>=
+@
+\caption{DPCoA scores, using geographical distances between
+  tracts. Note that census tracts that are close to each other tend to
+  have scores that are close to each other. The effect is almost a
+  little concerning -- how much is the actual data (not geographic
+  distance) contributing?}
+\label{fig:dpcoa-scores}
+\end{figure}
+
+\begin{figure}
+<<dpcoa-loadings>>=
+@
+\caption{Loadings associated with the DPCoA.}
+\label{fig:dpcoa-loadings}
+\end{figure}
+
+\begin{figure}
+<<dpcoa-scores-map>>=
+@
+\caption{DPCoA scores, on a map of San Francisco.}
+\label{fig:dpcoa-map}
+\end{figure}
 
 \section{Appendix}
 
-\subsection{Maps}
-
-Here are some exploratory maps.
-
 \subsection{Histograms}
 
-Some exploratory histograms.
+What was the effect of the cube root transformation? Figures
+\ref{fig:hist-untrans} and \ref{fig:hist-trans} give histograms for a
+subset of features in the data before and after the transformation.
+
+\begin{figure}
+<<untransformed-histograms>>=
+@
+\caption{Histograms of a few features, before taking cube root
+  transformations and centering, but after an overall scaling on the
+  demographic features.}
+\label{fig:hist-untrans}
+\end{figure}
+
+\begin{figure}
+<<transformed-histograms>>=
+@
+\caption{Histograms of the same featuers, after transformations.}
+\label{fig:hist-trans}
+\end{figure}
 
 \bibliographystyle{unsrt}
 \bibliography{multitable_sf_hip}

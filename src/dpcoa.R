@@ -3,7 +3,7 @@
 # DPCOA using spatial map information
 ################################################################################
 
-# get distances between census tracts
+## ---- get-distances ----
 keep_ix <- match(census_ids$Id, tract_ogr$GEO_ID)
 centers <- sapply(tract_ogr@polygons[keep_ix], function(x) x@labpt) %>%
   t() %>%
@@ -12,17 +12,13 @@ centers$Tract2010 <- census_ids$Tract2010
 centers <- centers %>% filter(Tract2010 %in% rownames(tract_num))
 D <- dist(centers[, 1:2])
 
-# run dpcoa
+## ---- run-dpcoa ----
 tdf <- data.frame(t(tract_num_unnormalized))
 dpcoa_result <- dpcoa(tdf, sqrt(D), scannf = F, nf = 4)
 
+## ---- dpcoa-scores-plot ----
 dpcoa_scores <- dpcoa_result$dls
 dpcoa_scores$Tract2010 <- as.integer(rownames(tract_num))
-
-## ---- dpcoa-scores-plot ----
-ggplot(dpcoa_scores) +
-  geom_text(aes(x = CS1, y = CS2, label = Tract2010), size = 3)
-
 ggplot(dpcoa_scores) +
   geom_text(aes(x = CS1, y = CS2, label = Tract2010), size = 3) +
   ggtitle("DPCoA Scores")
