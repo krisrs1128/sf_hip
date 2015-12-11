@@ -4,6 +4,7 @@
 ################################################################################
 
 ## ---- libraries ----
+library("ade4")
 library("data.table")
 library("FactoMineR")
 library("ggplot2")
