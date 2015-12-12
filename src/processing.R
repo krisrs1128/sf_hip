@@ -13,7 +13,7 @@ tract_info <- tract_info[tract_info$demo_Pop2010 > 1000, ]
 
 # get map data
 gpclibPermit()
-tract_ogr <- readOGR(dsn = "../data/processed_data/gz_2010_06_140_00_500k", layer = "gz_2010_06_140_00_500k")
+tract_ogr <- readOGR(dsn = "../data/processed_data/gz_2010_06_140_00_500k", layer = "gz_2010_06_140_00_500k", verbose = F)
 
 tract <- fortify(tract_ogr, region = "GEO_ID")
 tract_map <- merge(tract_info, tract, by = "id", all.x = TRUE)
