@@ -16,12 +16,18 @@ D <- dist(centers[, 1:2])
 tdf <- data.frame(t(tract_num_unnormalized))
 dpcoa_result <- dpcoa(tdf, sqrt(D), scannf = F, nf = 4)
 
-## ---- dpcoa-scores-plot ----
+## ---- dpcoa-scores-loadings ----
 dpcoa_scores <- dpcoa_result$dls
 dpcoa_scores$Tract2010 <- as.integer(rownames(tract_num))
 ggplot(dpcoa_scores) +
-  geom_text(aes(x = CS1, y = CS2, label = Tract2010), size = 3) +
+  geom_text(aes(x = CS1, y = CS2, label = Tract2010), size = 2) +
   ggtitle("DPCoA Scores")
+dpcoa_loadings <- data.frame(dpcoa_result$li,
+                             variable = rownames(dpcoa_result$li)) %>%
+                               process_loadings()
+ggplot(dpcoa_loadings) +
+  geom_text(aes(x = Axis1, y = Axis2, label = variable, col = group), size = 2) +
+  ggtitle("DPCoA Loadings")
 
 ## ---- dpcoa-scores-map ----
 dpcoa_map_scores <- dpcoa_scores %>%
@@ -35,11 +41,3 @@ ggplot(dpcoa_map_scores) +
   facet_wrap(~ variable) +
   coord_fixed() +
   ggtitle("DPCoA Scores")
-
-## ---- dpcoa-loadings ----
-dpcoa_loadings <- data.frame(dpcoa_result$li,
-                             variable = rownames(dpcoa_result$li)) %>%
-                               process_loadings()
-ggplot(dpcoa_loadings) +
-  geom_text(aes(x = Axis1, y = Axis2, label = variable, col = group), size = 3) +
-  ggtitle("Loadings from DPCoA")
