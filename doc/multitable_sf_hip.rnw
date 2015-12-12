@@ -1,4 +1,4 @@
-\documentclass{article}\usepackage{graphicx, color}
+\documentclass{scrartcl}\usepackage{graphicx, color}
 \usepackage{eulervm}
 %% maxwidth is the original width if it is less than linewidth
 %% otherwise use linewidth (to make sure the graphics do not exceed the margin)
@@ -11,6 +11,7 @@
   \fi
 }
 \makeatother
+
 
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
 \definecolor{fgcolor}{rgb}{0.2, 0.2, 0.2}
@@ -150,6 +151,7 @@
 \newcommand{\toprob}{\xrightarrow{\mathbb{P}}}
 \newcommand{\laweq}{\overset{\mathcal{L}}{=}}
 \newcommand{\F}{\mathcal{F}}
+\renewenvironment{knitrout}{\begin{singlespace}}{\end{singlespace}}
 %-----------------------
 % Math environments
 %-----------------------
@@ -160,11 +162,23 @@
 <<echo = FALSE, message = FALSE, warning = FALSE>>=
 library("knitr")
 library("ggplot2")
-opts_chunk$set(cache = TRUE, fig.width = 5, fig.height = 4,
-               fig.align = "center", message = F, warning = F, echo = F)
+library("grid")
+opts_chunk$set(cache = F, fig.width = 3, fig.height = 3,
+               message = F, warning = F, echo = F,
+               fig.show = "hold")
 scale_colour_discrete <- function(...)
   scale_colour_brewer(..., palette="Set2")
-theme_set(theme_bw())
+small_theme <- function(base_size = 7, base_family = "Helvetica") {
+  theme_bw(base_size = base_size, base_family = base_family) %+replace%
+  theme(axis.title = element_text(size = rel(0.8)),
+        legend.title = element_text(size = rel(0.8)),
+        legend.text = element_text(size = rel(0.8)),
+        plot.title = element_text(size = rel(1.1)),
+        plot.margin = unit(c(0.1, .1, .1, .1), "lines")
+        )
+}
+
+theme_set(small_theme())
 silence <- sapply(list.files("../src", full.names = TRUE), read_chunk)
 @
 
@@ -178,40 +192,37 @@ silence <- sapply(list.files("../src", full.names = TRUE), read_chunk)
 
 \section{Introduction}
 
-We discuss one approach to a health policy data analysis problem based
-on a multitable perspective. Our goals is to illustrate the kind of
-situation in which multitable methods can be useful, and also to to
-explore whether there is additional structure not considered by
-standard methods, which may lead to methods with more interesting
-interpretations.
+We discuss a multitable approach to a health policy data analysis
+problem. Our goals are to illustrate the kind of
+situation in which multitable methods can be useful and to motivate
+new methodological work through real data.
 
 This problem was the focus of a DataKind DataDive in spring 2015. All
 code from that event is
 \href{https://github.com/DataKind-SF/datadive_201503_sf-health-improvement-partnership}{available
-  online}. Some initial dimension reduction code still lingers in that
-repository, but this report goes into much more depth.
+  online}. Some preliminary multitable code still lingers in that
+repository, but this report goes into more depth.
 
 \subsection{Goals}
 
-The question posed by the San Francisco Health Improvement Partenrship
+The question posed by the San Francisco Health Improvement Partnership
 (SFHIP) was, from a high level, whether it was possible to quantify
 the relationship between crime and alcohol use in San Francisco. In
 particular, qualitative experience suggests that there are ``bad''
-types of liquor stores, that have a negative influence on their
-surrounding neighborhoods, in the sense that they lead to less safe,
-lower quality of life conditions. As SFHIP has been tasked broadly
-with maintaining the health of the populace, this is of basic
-interest.
+types of liquor stores, which have a negative influence on their
+surrounding neighborhoods, by attracting criminal activity. As SFHIP
+has been tasked broadly with maintaining the health of the populace --
+which includes public safety --  this is of basic interest.
 
 Prior to the event, a few volunteers collected data from sources that
 seemed potentially relevant. This included census tract information,
-liquor licence data from the city, and informal 311 reports from a
-the SF crimespotting database. Indeed, none of the data was collected
-by SFHIP -- they simply aggregated it from various public
-sources. Indeed, we imagine that, as more data becomes publicly
+liquor license data from the city, and informal 311 reports from a
+the \href{http://sanfrancisco.crimespotting.org/}{SF crimespotting database}. Indeed, none of the data was collected
+for this study -- it was simply aggregated from various public
+sources. We prophesize that, as more data becomes publicly
 accessible, the practice of assembling multiple tables to answer
-questions of interests will become more common, motivating more
-careful study of multitable methods.
+questions of interest will become more common, motivating deeper study
+of multitable methods.
 
 \subsection{The Data}
 
@@ -224,23 +235,23 @@ We will focus on three data sets,
       has more detailed descriptions.} We first filtered away license
     types that were very rare, and simplified further by getting rates
     for each license (there are 23 total) in each census tract, by
-    normalizing for population size.
+    normalizing by population size.
   \item \texttt{census}: This is standard census information from the
-    American Community Survey, at the census tract level -- we have
-    the population in 2010, a breakdown by demographics, median
-    income, and unemployment rates. We have data on 195 tracts (we
-    discarded a few with very low population).
+    American Community Survey. We have the population in 2010, a
+    breakdown by demographics, median income, and unemployment
+    rates for 195 census tracts (we discarded a few with very low
+    population).
   \item \texttt{crime}: These are crime rates (normalized by
     population) for 39 different offenses, within each census
     tract. Again, we have made many simplifications: the raw data
-    included the lat / lon and second-by-second resolution time-stamp
+    included the latitude / longitude and a second-by-second time-stamp
     of each 311 report from the crime-spotting database. Further, we
     have discarded less common offenses. Nonetheless, this simplified
     rate data will be sufficient for our present analysis.
 \end{itemize}
 
 Essentially, we have reduced all the raw data to a few tables of
-census-tract level rates. Yes, we have rarefied all the tracts, and
+census-tract level rates. Yes, we are rarefying, and
 are losing the fact that some of the rates are much better estimated
 than others. We'll leave it as a future exercise to repeat this
 analysis without simplifying to rates.
@@ -252,7 +263,7 @@ except DPCoA, we
 \begin{itemize}
 \item cube root the rates, so that they look more gaussian, and
 \item center the features, so that the usual ``axis of an ellipse''
-  interpretation of PCA will apply.
+  interpretation of PCA applies.
 \end{itemize}
 We cannot do this same preprocessing for DPCoA, since the function
 expects nonnegative data\footnote{The typical ecological application is a
@@ -262,23 +273,24 @@ species by sites counts matrix}.
 
 We present dimension reduction techniques in increasing order of
 complexity -- we start with single tables (PCA), then pairs (CCA), and
-then all three at once (MFA). Then, we consider incorporating spatial
+then all three at once (MFA). Finally, we consider incorporating spatial
 information, via DPCoA.
 
 \subsection{PCA}
 
 We can ignore the multitable aspect of the data -- just concatenate
 all the columns and run PCA. This has the downside that the crime
-table will have unduly influence, since it has the most
-features. Also, we will not have a sense how the groups of variables
-are related to each other.
+table will have unduly influence (it has the most columns). Also, we
+will not have a sense how the groups of variables are related to each
+other.
 
 Nonetheless, it is a good baseline, which will serve as a reference
-for subsequent methods. See Figures \ref{fig:pca_scores},
-\ref{fig:pca_loadings}, and \ref{fig:pca_map} for the results.
+for subsequent methods. See Figures \ref{fig:pca_scores} and
+\ref{fig:pca_map} for the results.
 
 <<libraries>>=
 @
+
 <<utils>>=
 @
 <<get-data>>=
@@ -292,25 +304,16 @@ for subsequent methods. See Figures \ref{fig:pca_scores},
 \begin{figure}
 <<pca-scores>>=
 @
+\caption{Each on the left point represents a single tract. The directions can be
+  interpreted by referring to loadings on the right.}
 \label{fig:pca_scores}
-\caption{Each point represents a single tract. The directions can be
-  interpreted by referring to Figure \ref{fig:pca_loadings}.}
 \end{figure}
 
 \begin{figure}
-<<pca-loadings>>=
+<<pca-map-comp, fig.align = "center", fig.height = 4, fig.width = 4>>=
 @
-\label{fig:pca_loadings}
-\caption{Loadings associated with the scores in Figure
-  \ref{fig:pca_scores}.}
-\end{figure}
-
-\begin{figure}
-<<pca-map-comp>>=
-@
+\caption{The PCA scores on a map of San Francisco.}
 \label{fig:pca_map}
-\caption{This shades each census tract in San Francisco by the first
-  few PCA components.}
 \end{figure}
 
 \subsection{CCA}
@@ -320,7 +323,9 @@ apply CCA. This has a few limitations -- like PCA, it implicitly
 assumes a gaussian model \cite{bach2005probabilistic}, and can only
 work with pairs of tables. This is not too much of a problem here,
 since we mainly care about the relationship between alcohol licenses
-and crime reports, anyway.
+and crime reports, anyways. See Figures
+\ref{fig:cca-crime-license-scores} and \ref{fig:cca-cors} for the
+results.
 
 <<run-cca>>=
 @
@@ -329,30 +334,21 @@ and crime reports, anyway.
 @
 
 \begin{figure}
-<<cca-crime-scores>>=
+<<cca-crime-license-scores>>=
 @
 \caption{These are the scores for the census tracts, when using the
-  crime data. Compare with the scores from the licesnse data, in
-  Figure \ref{fig:cca-license-scores}.}
-\label{fig:cca-crime-scores}
+  crime and license data, respectively.}
+\label{fig:cca-crime-license-scores}
 \end{figure}
 
 \begin{figure}
-<<cca-license-scores>>=
-@
-\caption{These are the scores for the census tracts, when using the
-  license data, instead of the crime data, as in Figure
-  \ref{fig:cca-crime-scores}.}
-\label{fig:cca-license-scores}
-\end{figure}
-
-\begin{figure}
-<<cca-top-correlation>>=
+<<cca-top-correlation, fig.align = "center">>=
 @
 \caption{To assess the success of the CCA optimization, we can plot
   the correlation between the optimized scores across the two
-  tables. The correlation is relatively strong, suggesting that in
-  fact the tables are quite related, at a global level.}
+  tables. The correlation is relatively strong, suggesting that
+  the tables are, in fact, quite related, at a global level.}
+\label{fig:cca-cors}
 \end{figure}
 
 \subsection{MFA}
@@ -363,29 +359,25 @@ quite similar to the original PCA, but we can now get extra
 group-level covariation information -- apparently the census and crime
 data are more related than either is to alcohol license rates.
 
-The first two dimensions capture about 50\% of the variance. Plots
+The first two dimensions capture about 50\% of the variation. Plots
 analogous to those displayed earlier are given in Figures
-\ref{fig:mfa-scores}, \ref{fig:mfa-loadings}, \ref{fig:mfa-map}.
+\ref{fig:mfa-scores-loadings} and \ref{fig:mfa-map}.
 
 <<run-mfa>>=
 @
 
 \begin{figure}
-<<mfa-scores>>=
+<<mfa-scores-loadings>>=
 @
-\caption{Scores computed from MFA.}
+\caption{Scores and loadings computed from MFA.}
+\label{fig:mfa-scores-loadings}
 \end{figure}
 
 \begin{figure}
-<<mfa-loadings>>=
+<<mfa-scores-map, fig.height = 4, fig.width = 4, fig.align = "center">>=
 @
-\caption{Loadings computed from MFA.}
-\end{figure}
-
-\begin{figure}
-<<mfa-scores-map>>=
-@
-\caption{Scores for each census tract, from MFA.}
+\caption{MFA scores on a map of San Francisco.}
+\label{fig:mfa-map}
 \end{figure}
 
 \subsection{DPCoA}
@@ -398,14 +390,14 @@ method (or at least, the \texttt{R} function) only works with
 nonnegative data, we will have to work with the untransformed,
 uncentered version of the data.
 
-Our results are shown in Figures \ref{fig:dpcoa-scores},
-\ref{fig:dpcoa-loadings}, \ref{fig:dpcoa-scores-map}. The scores had
-already been smooth on the maps from our earlier approaches, even
-without enforcing spatial homogeneity, but now even stronger
-neighborhood clustering is apparent. Also, regions (in the south and
-southwest) that seemed to share essentially the same scores now appear
-quite different. It is not obvious to me whether this is due to
-differences in methdology or the absense of processing.
+Our results are shown in Figures \ref{fig:dpcoa-scores-loadings} and
+\ref{fig:dpcoa-scores-map}. The scores had already been smooth on the
+maps from our earlier approaches, even without enforcing spatial
+homogeneity, but now even stronger neighborhood clustering is
+apparent. Also, regions (in the south and southwest) that seemed to
+share essentially the same scores now appear quite different. It is
+not obvious to me whether this is due to differences in methdology or
+the absense of processing.
 
 <<get-distances>>=
 @
@@ -414,51 +406,36 @@ differences in methdology or the absense of processing.
 @
 
 \begin{figure}
-<<dpcoa-scores-plot>>=
+<<dpcoa-scores-loadings>>=
 @
 \caption{DPCoA scores, using geographical distances between
   tracts. Note that census tracts that are close to each other tend to
   have scores that are close to each other. The effect is almost a
   little concerning -- how much is the actual data (not geographic
   distance) contributing?}
-\label{fig:dpcoa-scores}
+\label{fig:dpcoa-scores-loadings}
 \end{figure}
 
 \begin{figure}
-<<dpcoa-loadings>>=
+<<dpcoa-scores-map, fig.align = "center", fig.height = 4, fig.width = 4>>=
 @
-\caption{Loadings associated with the DPCoA.}
-\label{fig:dpcoa-loadings}
-\end{figure}
-
-\begin{figure}
-<<dpcoa-scores-map>>=
-@
-\caption{DPCoA scores, on a map of San Francisco.}
-\label{fig:dpcoa-map}
+\caption{DPCoA scores on a map of San Francisco.}
+\label{fig:dpcoa-scores-map}
 \end{figure}
 
 \section{Appendix}
 
 \subsection{Histograms}
 
-What was the effect of the cube root transformation? Figures
-\ref{fig:hist-untrans} and \ref{fig:hist-trans} give histograms for a
-subset of features in the data before and after the transformation.
+What was the effect of the cube root transformation? Figure
+\ref{fig:hist-trans} gives histograms for a subset of features in the
+data before and after the transformation.
 
 \begin{figure}
-<<untransformed-histograms>>=
+<<histograms-transformation>>=
 @
-\caption{Histograms of a few features, before taking cube root
-  transformations and centering, but after an overall scaling on the
-  demographic features.}
-\label{fig:hist-untrans}
-\end{figure}
-
-\begin{figure}
-<<transformed-histograms>>=
-@
-\caption{Histograms of the same featuers, after transformations.}
+\caption{Histograms of a few features, before and after taking cube
+  root transformations and centering.}
 \label{fig:hist-trans}
 \end{figure}
 
